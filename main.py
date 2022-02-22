@@ -16,6 +16,14 @@ ONPATH    = 4
 START     = 5
 GOAL      = 6
 
+PATH_STATES = {
+    0: 7,
+    1: 8,
+    2: 9,
+    3: 10,
+    4: 11
+}
+
 ######################################################################
 #
 #   showgrid(M,N)
@@ -58,6 +66,11 @@ def showgrid(state):
                 ONPATH: 'purple',
                 START: 'green',
                 GOAL: 'red',
+                PATH_STATES[0]: 'purple',
+                PATH_STATES[1]: 'orange',
+                PATH_STATES[2]: 'magenta',
+                PATH_STATES[3]: 'yellow',
+                PATH_STATES[4]: 'maroon'
             }
             if state[m, n] not in state_to_color:
                 c = 'red'
@@ -76,6 +89,28 @@ def showgrid(state):
 #
 #   Main Code
 #
+
+class SpaceTimeCoordinate:
+    def __init__(self, x, y, time):
+        self.x = x
+        self.y = y
+        self.time = time
+
+    def get_space(self):
+        return (self.x, self.y)
+
+    def __lt__(self, other):
+        return (self.x, self.y, self.time) < (other.x, other.y, other.time)
+
+    def __gt__(self, other):
+        return (self.x, self.y, self.time) > (other.x, other.y, other.time)
+
+    def __eq__(self, other):
+        return (self.x, self.y, self.time) == (other.x, other.y, other.time)
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.time))
+
 
 num_robots = 2
 
@@ -116,7 +151,7 @@ def manhattan_distance(a, b):
 
 from heapq import heappush, heappop
 
-def a_star(state, start, goal, num_robots, a_factor=1):
+def a_star(state, start, goal, forbidden, a_factor=1):
 
     # Copy of input map which we will manipulate
     sol = state.copy()
@@ -124,67 +159,113 @@ def a_star(state, start, goal, num_robots, a_factor=1):
     # Trace the path to the start square from any visited square
     parents = dict()
 
+    # Set of visited coordinates in space
+    visited = set()
+
     # Number of squares we processed
     num_processed = 0
 
     # Priority queue used to process squares
     q = []
-    heappush(q, (a_factor*manhattan_distance(start, goal), start))
+    heappush(q, (a_factor * manhattan_distance(start, goal), 
+                SpaceTimeCoordinate(start[0], start[1], 0)))
 
     while True:
-
         # Ran out of squares to visit without finding the goal
         if not q:
             raise RuntimeError("No path from start to goal!")
 
-        dist, square = heappop(q)
-        #for i in range(num_robots):
-        dist -= a_factor*manhattan_distance(goal, square)
+        dist, coord = heappop(q)
+        dist -= a_factor * manhattan_distance(goal, coord.get_space())
         num_processed += 1
 
         # We found the goal
-        if square == goal:
+        if coord.get_space() == goal:
+            # We don't want to step onto the goal if another path will pass through
+            # it at some point in the future. This just looks ahead 20 time steps -
+            # we'll need to change it at some point.
+            for i in range(20):
+                if SpaceTimeCoordinate(coord.x, coord.y, coord.time + i) in forbidden:
+                    continue
+
             # Backtrace the optimal path from the goal to the start
+            path = []
             path_length = 0
-            curr = square
+            curr = coord
+            occupied = set()
+
+            for i in range(20):
+                occupied.add(SpaceTimeCoordinate(curr.x, curr.y, curr.time + i))
+
             while curr in parents:
-                sol[curr] = ONPATH
+                path.append(curr.get_space())
                 curr = parents[curr]
                 path_length += 1
-            sol[curr] = ONPATH
+                occupied.add(curr)
+
+            path.append(curr.get_space())
+            path.reverse()
+
             print(f"Path length: {path_length}")
             print(f"Number of states processed: {num_processed}")
-            break
+
+            return path, occupied
 
         # Add all unseen neighbors to the processing queue
-        sol[square] = PROCESSED
-        for nbor in get_neighbors(square):
-            if sol[nbor] == UNKNOWN:
+        visited.add(coord.get_space())
+        for nbor in get_neighbors(coord.get_space()):
+            new_coord = SpaceTimeCoordinate(nbor[0], nbor[1], coord.time + 1)
+            if nbor not in visited and new_coord not in forbidden \
+                and state[nbor] != WALL and state[nbor] != START:
                 man_dist = manhattan_distance(goal, nbor)
-                heappush(q, (1 + dist + a_factor*man_dist, nbor))
-                sol[nbor] = ONDECK
-                parents[nbor] = square
+                heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
+                parents[new_coord] = coord
 
-    sol[sol == PROCESSED] = UNKNOWN
-    sol[sol == ONDECK]    = UNKNOWN
-    return sol
+        # Add the option of remaining in the same location
+        new_coord = SpaceTimeCoordinate(coord.x, coord.y, coord.time + 1)
+        man_dist = manhattan_distance(goal, new_coord.get_space())
+        heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
+        parents[new_coord] = coord
+
+    # Never reached
+    raise RuntimeError("Error: should never be reached")
 
 def dijkstra(state, start, goal):
     return a_star(state, start, goal, a_factor=0)
 
 # Update/show the grid and show the S/G states labelled.
-robots_start = ((5, 4),  (5, 3))
-robots_goal  = ((5, 12), (5, 13))
-#start = (5, 4)
-#goal = (5, 12)
+robots_start = ((9, 8),  (5, 3), (1, 15), (5, 1), (1, 1))
+robots_goal  = ((5, 12), (5, 13), (9, 1), (3, 15), (6, 11))
 
-# METHOD 1: DO A* separately so that the two paths don't intersect
-sol = a_star(state, robots_start[0], robots_goal[0], 1)
-sol = a_star(sol,   robots_start[0], robots_goal[1], 1)
+PATH_COLORS = ['purple', 'orange', 'yellow', 'magenta', 'maroon']
 
 for start, end in zip(robots_start, robots_goal):
-    sol[start] = START
-    sol[end]   = GOAL
+    state[start] = START
+    state[end]   = GOAL
 
-showgrid(sol)
-input('Hit return to continue')
+forbidden = set()
+
+paths = []
+
+for i in range(len(robots_start)):
+    path, occupied = a_star(state, robots_start[i], robots_goal[i], forbidden)
+    paths.append(path)
+
+    for coord in occupied:
+        forbidden.add(coord)
+
+for i in range(max([len(path) for path in paths])):
+    for j, path in enumerate(paths):
+        if i >= len(path):
+            continue
+
+        state[path[i]] = PATH_STATES[j]
+
+        if i > 0 and path[i - 1] != path[i] and state[path[i - 1]] == PATH_STATES[j]:
+            if path[i - 1] in robots_goal:
+                state[path[i - 1]] = GOAL
+            else:
+                state[path[i - 1]] = UNKNOWN
+
+    showgrid(state)
+    input('Hit return to continue')
