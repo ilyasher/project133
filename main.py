@@ -80,10 +80,6 @@ def showgrid(state):
     # Force the figure to pop up.
     plt.pause(0.001)
 
-######################################################################
-#
-#   Main Code
-#
 
 class SpaceTimeCoordinate:
     def __init__(self, x, y, time):
@@ -105,10 +101,6 @@ class SpaceTimeCoordinate:
 
     def __hash__(self):
         return hash((self.x, self.y, self.time))
-
-# Define the grid with unknown states.
-#M = 11
-#N = 17
 
 def load_map(filepath):
     with open(filepath) as f:
