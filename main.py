@@ -5,6 +5,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import sys
 
 
 # Define the possible status levels for each state.
@@ -16,13 +17,7 @@ ONPATH    = 4
 START     = 5
 GOAL      = 6
 
-PATH_STATES = {
-    0: 7,
-    1: 8,
-    2: 9,
-    3: 10,
-    4: 11
-}
+PATH_STATES = [7, 8, 9, 10, 11]
 
 ######################################################################
 #
@@ -111,27 +106,43 @@ class SpaceTimeCoordinate:
     def __hash__(self):
         return hash((self.x, self.y, self.time))
 
-
-num_robots = 2
-
 # Define the grid with unknown states.
-M = 11
-N = 17
+#M = 11
+#N = 17
 
-state = np.ones((M,N)) * UNKNOWN
+def load_map(filepath):
+    with open(filepath) as f:
+        lines = f.readlines()
+    #assert len(set(map(len, lines))) == 1
+    M = len(lines)
+    N = len(lines[0])
 
-# Populate the states.
-state[ 0,0:] = WALL
-state[-1,0:] = WALL
-state[0:, 0] = WALL
-state[0:,-1] = WALL
+    starts = dict()
+    goals = dict()
 
-state[3, 4:10] = WALL
-state[4,   10] = WALL
-state[5,   11] = WALL
-state[6,   12] = WALL
-state[7,   13] = WALL
-state[7:M,  7] = WALL
+    state = np.ones((M, N)) * UNKNOWN
+
+    for i, line in enumerate(lines):
+        for j, c in enumerate(line):
+            if c == '#':
+                state[i, j] = WALL
+            elif c.isalpha():
+                if c.islower():
+                    starts[c] = (i, j)
+                else:
+                    goals[c.lower()]  = (i, j)
+
+    robots_start = list()
+    robots_goal  = list()
+    for robot in starts:
+        robots_start.append(starts[robot])
+        robots_goal.append(goals[robot])
+
+    return state, robots_start, robots_goal
+
+mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/map1.txt'
+state, robots_start, robots_goal = load_map(mappath)
+M, N = state.shape
 
 def get_neighbors(square):
     neighbors = list()
@@ -167,7 +178,7 @@ def a_star(state, start, goal, forbidden, a_factor=1):
 
     # Priority queue used to process squares
     q = []
-    heappush(q, (a_factor * manhattan_distance(start, goal), 
+    heappush(q, (a_factor * manhattan_distance(start, goal),
                 SpaceTimeCoordinate(start[0], start[1], 0)))
 
     while True:
@@ -232,10 +243,6 @@ def a_star(state, start, goal, forbidden, a_factor=1):
 
 def dijkstra(state, start, goal):
     return a_star(state, start, goal, a_factor=0)
-
-# Update/show the grid and show the S/G states labelled.
-robots_start = ((9, 8),  (5, 3), (1, 15), (5, 1), (1, 1))
-robots_goal  = ((5, 12), (5, 13), (9, 1), (3, 15), (6, 11))
 
 PATH_COLORS = ['purple', 'orange', 'yellow', 'magenta', 'maroon']
 
