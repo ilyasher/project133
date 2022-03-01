@@ -139,7 +139,7 @@ M, N = state.shape
 def get_neighbors(square):
     neighbors = list()
     i, j = square
-    #neighbors.append(square)
+    neighbors.append(square)
     if i < M-1:
         neighbors.append((i+1, j))
     if i > 0:
@@ -148,21 +148,28 @@ def get_neighbors(square):
         neighbors.append((i, j+1))
     if j > 0:
         neighbors.append((i, j-1))
+    neighbors = list(filter(lambda square: state[square] != WALL, neighbors))
     return neighbors
 
 # Create a list of all possible combinations of squares for the next move
 def get_neighbors_multi(squares):
     ret = [[]]
 
-    for square in squares:
+    squares = list(squares)
+    for i, square in enumerate(squares):
         new = list()
 
         # Add each square's neighbor only if it doesn't overlap with an
         # existing square. (So they don't pass thru each other)
+        temp = squares[i]
+        squares[i] = ...
         for neighbor in get_neighbors(square):
-            if neighbor in squares:
+            if neighbor in squares :
                 continue
-            new += [r + [neighbor] for r in ret]
+
+            new += [r + [neighbor] for r in ret if neighbor not in r]
+        squares[i] = temp
+
         ret = new
 
     # Convert to list of tuple
@@ -181,7 +188,7 @@ def manhattan_distance_multi(a, b):
 
 from heapq import heappush, heappop
 
-def a_star_multi(state, starts, goals, a_factor=1):
+def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
 
     # Copy of input map which we will manipulate
     sol = state.copy()
@@ -215,7 +222,6 @@ def a_star_multi(state, starts, goals, a_factor=1):
             path = []
             path_length = 0
             curr = coords
-            occupied = set()
 
             while curr in parents:
                 path.append(curr)
@@ -231,18 +237,26 @@ def a_star_multi(state, starts, goals, a_factor=1):
             return path
 
         # Add all unseen neighbors to the processing queue
-        print(coords)
+        #print(coords)
+        if visualize:
+            state_show = state.copy()
+            for i, robot_loc in enumerate(coords):
+                state_show[robot_loc] = PATH_STATES[i]
+            showgrid(state_show)
+        assert coords not in visited
         visited.add(coords)
+        print(len(visited), len(q), len(set(q)), len(coords), len(get_neighbors_multi(coords)))
+        #print(q)
         for nbor in get_neighbors_multi(coords):
             if nbor in visited:
                 continue
-            if nbor in q:
+            if any(map(lambda x: x[1] == nbor, q)):
                 continue
-            for robot_coord in nbor:
-                if state[robot_coord] == WALL:
-                    continue
+            if any(map(lambda x: state[x] == WALL, nbor)):
+                continue
+            assert nbor not in visited
             man_dist = manhattan_distance_multi(goals, nbor)
-            heappush(q, (1 + dist + a_factor * man_dist, nbor))
+            heappush(q, (len(starts) + dist + a_factor * man_dist, nbor))
             parents[nbor] = coords
 
         # Add the option of remaining in the same location
@@ -263,13 +277,14 @@ for start, end in zip(robots_start, robots_goal):
     state[start] = START
     state[end]   = GOAL
 
-
-path = a_star_multi(state, robots_start, robots_goal)
+state_save = state.copy()
+path = a_star_multi(state, robots_start, robots_goal, a_factor=2)
 for step in path:
+    state_show = state_save.copy()
     for i, robot_loc in enumerate(step):
-        state[robot_loc] = PATH_STATES[i]
-        showgrid(state)
-        input('Hit return to continue')
+        state_show[robot_loc] = PATH_STATES[i]
+    showgrid(state_show)
+    input('Hit return to continue')
 
 # for i in range(max([len(path) for path in paths])):
 #     for j, path in enumerate(paths):
