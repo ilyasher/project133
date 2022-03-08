@@ -228,7 +228,6 @@ def a_star(state, start, goal, forbidden, a_factor=1):
             return path, occupied
 
         # Add all unseen neighbors to the processing queue
-        # visited.add(coord.get_space())
         visited.add(coord)
         for nbor in get_neighbors(coord.get_space()):
             if nbor in unique_coords_in_q:
@@ -294,14 +293,5 @@ for i in range(max([len(path) for path in paths])):
     showgrid(state)
     plt.pause(0.1)
     for j, path in enumerate(paths):
-        # state[PATH_STATES[0] <= state <= PATH_STATES[-1]] *= -1
         state[np.isin(state, PATH_STATES)] *= -1
-        # state[PATH_STATES[0] <= state <= PATH_STATES[-1]] *= -1
-        # state[path[min(i, len(path)-1)]] = PATH_STATES[j]
-
-        # if i > 0 and path[i - 1] != path[i] and state[path[i - 1]] == PATH_STATES[j]:
-        #     if path[i - 1] in robots_goal:
-        #         state[path[i - 1]] = GOAL
-        #     else:
-        #         state[path[i - 1]] = UNKNOWN
 input("Hit return to exit")
