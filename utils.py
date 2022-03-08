@@ -99,3 +99,55 @@ def showgrid(state):
 
     # Force the figure to pop up.
     plt.pause(0.001)
+
+def get_neighbors(square, state):
+    M, N = state.shape
+    neighbors = list()
+    i, j = square
+    neighbors.append(square)
+    if i < M-1:
+        neighbors.append((i+1, j))
+    if i > 0:
+        neighbors.append((i-1, j))
+    if j < N-1:
+        neighbors.append((i, j+1))
+    if j > 0:
+        neighbors.append((i, j-1))
+    if state is not None:
+        neighbors = list(filter(lambda square: state[square] != WALL, neighbors))
+    return neighbors
+
+# Create a list of all possible combinations of squares for the next move
+def get_neighbors_multi(squares, state):
+    ret = [[]]
+
+    squares = list(squares)
+    for i, square in enumerate(squares):
+        new = list()
+
+        # Add each square's neighbor only if it doesn't overlap with an
+        # existing square. (So they don't pass thru each other)
+        temp = squares[i]
+        squares[i] = ...
+        for neighbor in get_neighbors(square, state=state):
+            if neighbor in squares :
+                continue
+
+            new += [r + [neighbor] for r in ret if neighbor not in r]
+        squares[i] = temp
+
+        ret = new
+
+    # Convert to list of tuple
+    ret = list(map(tuple, ret))
+
+    return ret
+
+def manhattan_distance(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def manhattan_distance_multi(a, b):
+    ret = 0
+    for i in range(len(a)):
+        ret += manhattan_distance(a[i], b[i])
+    return ret

@@ -9,68 +9,10 @@ import sys
 
 from utils import *
 
-######################################################################
-#
-#   showgrid(M,N)
-#
-#   Create a figure for an M (rows) x N (column) grid.  The X-axis
-#   will be the columns (to the right) and the Y-axis will be the rows
-#   (top downward).
-#
-
 mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
 state, robots_start, robots_goal = load_map(mappath)
 M, N = state.shape
 
-def get_neighbors(square):
-    neighbors = list()
-    i, j = square
-    neighbors.append(square)
-    if i < M-1:
-        neighbors.append((i+1, j))
-    if i > 0:
-        neighbors.append((i-1, j))
-    if j < N-1:
-        neighbors.append((i, j+1))
-    if j > 0:
-        neighbors.append((i, j-1))
-    neighbors = list(filter(lambda square: state[square] != WALL, neighbors))
-    return neighbors
-
-# Create a list of all possible combinations of squares for the next move
-def get_neighbors_multi(squares):
-    ret = [[]]
-
-    squares = list(squares)
-    for i, square in enumerate(squares):
-        new = list()
-
-        # Add each square's neighbor only if it doesn't overlap with an
-        # existing square. (So they don't pass thru each other)
-        temp = squares[i]
-        squares[i] = ...
-        for neighbor in get_neighbors(square):
-            if neighbor in squares :
-                continue
-
-            new += [r + [neighbor] for r in ret if neighbor not in r]
-        squares[i] = temp
-
-        ret = new
-
-    # Convert to list of tuple
-    ret = list(map(tuple, ret))
-
-    return ret
-
-def manhattan_distance(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-def manhattan_distance_multi(a, b):
-    ret = 0
-    for i in range(len(a)):
-        ret += manhattan_distance(a[i], b[i])
-    return ret
 
 from heapq import heappush, heappop
 
@@ -130,8 +72,8 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
             showgrid(state_show)
         assert coords not in visited
         visited.add(coords)
-        print(len(visited), len(q), len(set(q)), len(coords), len(get_neighbors_multi(coords)))
-        for nbor in get_neighbors_multi(coords):
+        print(len(visited), len(q), len(set(q)), len(coords), len(get_neighbors_multi(coords, state)))
+        for nbor in get_neighbors_multi(coords, state):
             if nbor in visited:
                 continue
             if any(map(lambda x: x[1] == nbor, q)):

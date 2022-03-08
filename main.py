@@ -37,28 +37,9 @@ mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
 state, robots_start, robots_goal = load_map(mappath)
 M, N = state.shape
 
-def get_neighbors(square):
-    neighbors = list()
-    i, j = square
-    if i < M-1:
-        neighbors.append((i+1, j))
-    if i > 0:
-        neighbors.append((i-1, j))
-    if j < N-1:
-        neighbors.append((i, j+1))
-    if j > 0:
-        neighbors.append((i, j-1))
-    return neighbors
-
-def manhattan_distance(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
 from heapq import heappush, heappop
 
 def a_star(state, start, goal, forbidden, a_factor=1):
-
-    # Copy of input map which we will manipulate
-    sol = state.copy()
 
     # Trace the path to the start square from any visited square
     parents = dict()
@@ -71,22 +52,33 @@ def a_star(state, start, goal, forbidden, a_factor=1):
     # Number of squares we processed
     num_processed = 0
 
-    # Priority queue used to process squares
     q = []
-    heappush(q, (a_factor * manhattan_distance(start, goal),
-                SpaceTimeCoordinate(start[0], start[1], 0)))
-    print(start)
-    unique_coords_in_q.add(start)
+
+    def enqueue(new_coord, prev_dist=0, parent=None):
+        man_dist = manhattan_distance(goal, new_coord.get_space())
+        heappush(q, (1 + prev_dist + new_coord.time + a_factor * man_dist, new_coord))
+        if parent is not None:
+            parents[new_coord] = parent
+        unique_coords_in_q.add(new_coord.get_space())
+        assert len(q) == len(unique_coords_in_q)
+
+    def dequeue():
+        dist, coord = heappop(q)
+        dist -= a_factor * manhattan_distance(goal, coord.get_space())
+        unique_coords_in_q.remove(coord.get_space())
+        assert len(q) == len(unique_coords_in_q)
+        return dist, coord
+
+    # Priority queue used to process squares
+    enqueue(SpaceTimeCoordinate(start[0], start[1], 0))
 
     while True:
         # Ran out of squares to visit without finding the goal
         if not q:
             raise RuntimeError("No path from start to goal!")
 
-        dist, coord = heappop(q)
-        dist -= a_factor * manhattan_distance(goal, coord.get_space())
+        dist, coord = dequeue()
         num_processed += 1
-        unique_coords_in_q.remove(coord.get_space())
 
         # We found the goal
         if coord.get_space() == goal:
@@ -122,7 +114,7 @@ def a_star(state, start, goal, forbidden, a_factor=1):
 
         # Add all unseen neighbors to the processing queue
         visited.add(coord)
-        for nbor in get_neighbors(coord.get_space()):
+        for nbor in get_neighbors(coord.get_space(), state):
             if nbor in unique_coords_in_q:
                 continue
             new_coord = SpaceTimeCoordinate(nbor[0], nbor[1], coord.time + 1)
@@ -144,18 +136,13 @@ def a_star(state, start, goal, forbidden, a_factor=1):
             if new_coord2 in forbidden and new_coord3 in forbidden:
                 continue
 
-            man_dist = manhattan_distance(goal, nbor)
-            heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
-            parents[new_coord] = coord
-            unique_coords_in_q.add(new_coord.get_space())
+            enqueue(new_coord, prev_dist=dist, parent=coord)
 
         # Add the option of remaining in the same location
         new_coord = SpaceTimeCoordinate(coord.x, coord.y, coord.time + 1)
         if new_coord not in forbidden:
-            man_dist = manhattan_distance(goal, new_coord.get_space())
-            heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
-            parents[new_coord] = coord
-            unique_coords_in_q.add(new_coord.get_space())
+            if new_coord.get_space() not in unique_coords_in_q:
+                enqueue(new_coord, prev_dist=dist, parent=coord)
 
     # Never reached
     raise RuntimeError("Error: should never be reached")
