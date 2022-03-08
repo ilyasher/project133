@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 #
-#   discrete_path_demo.py
+#   many_astar.py
 #
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import sys
 
+from heapq import heappush, heappop
+
 from utils import *
 
 mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
 state, robots_start, robots_goal = load_map(mappath)
-M, N = state.shape
-
-
-from heapq import heappush, heappop
 
 def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
-
-    # Copy of input map which we will manipulate
-    sol = state.copy()
 
     # Trace the path to the start square from any visited square
     parents = dict()
@@ -70,9 +65,9 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
             for i, robot_loc in enumerate(coords):
                 state_show[robot_loc] = PATH_STATES[i]
             showgrid(state_show)
+
         assert coords not in visited
         visited.add(coords)
-        print(len(visited), len(q), len(set(q)), len(coords), len(get_neighbors_multi(coords, state)))
         for nbor in get_neighbors_multi(coords, state):
             if nbor in visited:
                 continue
@@ -84,6 +79,9 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
             man_dist = manhattan_distance_multi(goals, nbor)
             heappush(q, (len(starts) + dist + a_factor * man_dist, nbor))
             parents[nbor] = coords
+
+        if num_processed % 100 == 0:
+            print(f"Processed {num_processed} states")
 
     # Never reached
     raise RuntimeError("Error: should never be reached")

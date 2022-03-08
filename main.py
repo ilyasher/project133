@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 #
-#   discrete_path_demo.py
+#   main.py
 #
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import sys
+
+from heapq import heappush, heappop
 
 from utils import *
 
@@ -35,9 +37,6 @@ class SpaceTimeCoordinate:
 
 mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
 state, robots_start, robots_goal = load_map(mappath)
-M, N = state.shape
-
-from heapq import heappush, heappop
 
 def a_star(state, start, goal, forbidden, a_factor=1):
 
@@ -146,9 +145,6 @@ def a_star(state, start, goal, forbidden, a_factor=1):
 
     # Never reached
     raise RuntimeError("Error: should never be reached")
-
-def dijkstra(state, start, goal):
-    return a_star(state, start, goal, a_factor=0)
 
 for i in range(len(robots_start)):
     state[robots_start[i]] = PATH_STATES[i]
