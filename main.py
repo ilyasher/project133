@@ -102,6 +102,9 @@ class SpaceTimeCoordinate:
     def __hash__(self):
         return hash((self.x, self.y, self.time))
 
+    def __repr__(self):
+        return f"SpaceTimeCoordinate: x:{self.x}, y:{self.y}, time:{self.time}"
+
 def load_map(filepath):
     with open(filepath) as f:
         lines = f.readlines()
@@ -215,20 +218,38 @@ def a_star(state, start, goal, forbidden, a_factor=1):
             return path, occupied
 
         # Add all unseen neighbors to the processing queue
-        visited.add(coord.get_space())
+        # visited.add(coord.get_space())
+        visited.add(coord)
         for nbor in get_neighbors(coord.get_space()):
             new_coord = SpaceTimeCoordinate(nbor[0], nbor[1], coord.time + 1)
-            if nbor not in visited and new_coord not in forbidden \
-                and state[nbor] != WALL and state[nbor] != START:
-                man_dist = manhattan_distance(goal, nbor)
-                heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
-                parents[new_coord] = coord
+            if new_coord in visited:
+                continue
+            if new_coord in forbidden:
+                continue
+            if any(map(lambda x: x[1] == new_coord, q)):
+                continue
+            if state[nbor] == WALL:
+                continue
+
+            assert nbor not in visited
+
+            # Don't pass thru each other
+            # This is technically not correct, it is slightly too harsh
+            new_coord2 = SpaceTimeCoordinate(nbor[0], nbor[1], coord.time)
+            new_coord3 = SpaceTimeCoordinate(coord.x, coord.y, coord.time + 1)
+            if new_coord2 in forbidden and new_coord3 in forbidden:
+                continue
+
+            man_dist = manhattan_distance(goal, nbor)
+            heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
+            parents[new_coord] = coord
 
         # Add the option of remaining in the same location
         new_coord = SpaceTimeCoordinate(coord.x, coord.y, coord.time + 1)
-        man_dist = manhattan_distance(goal, new_coord.get_space())
-        heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
-        parents[new_coord] = coord
+        if new_coord not in forbidden:
+            man_dist = manhattan_distance(goal, new_coord.get_space())
+            heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
+            parents[new_coord] = coord
 
     # Never reached
     raise RuntimeError("Error: should never be reached")
