@@ -7,18 +7,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import sys
 
+from utils import *
+
 
 # Define the possible status levels for each state.
-WALL      = 0
-UNKNOWN   = 1
-ONDECK    = 2
-PROCESSED = 3
-ONPATH    = 4
-START     = 5
-GOAL      = 6
-
-PATH_STATES = [7, 8, 9, 10, 11]
-
 ######################################################################
 #
 #   showgrid(M,N)
@@ -110,37 +102,7 @@ class SpaceTimeCoordinate:
     def __repr__(self):
         return f"SpaceTimeCoordinate: x:{self.x}, y:{self.y}, time:{self.time}"
 
-def load_map(filepath):
-    with open(filepath) as f:
-        lines = f.readlines()
-    #assert len(set(map(len, lines))) == 1
-    M = len(lines)
-    N = len(lines[0])
-
-    starts = dict()
-    goals = dict()
-
-    state = np.ones((M, N)) * UNKNOWN
-
-    for i, line in enumerate(lines):
-        for j, c in enumerate(line):
-            if c == '#':
-                state[i, j] = WALL
-            elif c.isalpha():
-                if c.islower():
-                    starts[c] = (i, j)
-                else:
-                    goals[c.lower()]  = (i, j)
-
-    robots_start = list()
-    robots_goal  = list()
-    for robot in starts:
-        robots_start.append(starts[robot])
-        robots_goal.append(goals[robot])
-
-    return state, robots_start, robots_goal
-
-mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/map1.txt'
+mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
 state, robots_start, robots_goal = load_map(mappath)
 M, N = state.shape
 
@@ -270,11 +232,9 @@ def a_star(state, start, goal, forbidden, a_factor=1):
 def dijkstra(state, start, goal):
     return a_star(state, start, goal, a_factor=0)
 
-PATH_COLORS = ['purple', 'orange', 'yellow', 'magenta', 'maroon']
-
-for start, end in zip(robots_start, robots_goal):
-    state[start] = START
-    state[end]   = GOAL
+for i in range(len(robots_start)):
+    state[robots_start[i]] = PATH_STATES[i]
+    state[robots_goal[i]]  = GOAL
 
 forbidden = set()
 
@@ -287,6 +247,8 @@ for i in range(len(robots_start)):
     for coord in occupied:
         forbidden.add(coord)
 
+showgrid(state)
+input("Solution found. Hit return to continue.")
 for i in range(max([len(path) for path in paths])):
     for j, path in enumerate(paths):
         state[path[min(i, len(path)-1)]] = PATH_STATES[j]

@@ -7,17 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import sys
 
-
-# Define the possible status levels for each state.
-WALL      = 0
-UNKNOWN   = 1
-ONDECK    = 2
-PROCESSED = 3
-ONPATH    = 4
-START     = 5
-GOAL      = 6
-
-PATH_STATES = [7, 8, 9, 10, 11]
+from utils import *
 
 ######################################################################
 #
@@ -79,58 +69,6 @@ def showgrid(state):
 
     # Force the figure to pop up.
     plt.pause(0.001)
-
-
-class SpaceTimeCoordinate:
-    def __init__(self, x, y, time):
-        self.x = x
-        self.y = y
-        self.time = time
-
-    def get_space(self):
-        return (self.x, self.y)
-
-    def __lt__(self, other):
-        return (self.x, self.y, self.time) < (other.x, other.y, other.time)
-
-    def __gt__(self, other):
-        return (self.x, self.y, self.time) > (other.x, other.y, other.time)
-
-    def __eq__(self, other):
-        return (self.x, self.y, self.time) == (other.x, other.y, other.time)
-
-    def __hash__(self):
-        return hash((self.x, self.y, self.time))
-
-def load_map(filepath):
-    with open(filepath) as f:
-        lines = f.readlines()
-    #assert len(set(map(len, lines))) == 1
-    M = len(lines)
-    N = len(lines[0])
-
-    starts = dict()
-    goals = dict()
-
-    state = np.ones((M, N)) * UNKNOWN
-
-    for i, line in enumerate(lines):
-        for j, c in enumerate(line):
-            if c == '#':
-                state[i, j] = WALL
-            elif c.isalpha():
-                if c.islower():
-                    starts[c] = (i, j)
-                else:
-                    goals[c.lower()]  = (i, j)
-
-    robots_start = list()
-    robots_goal  = list()
-    for robot in starts:
-        robots_start.append(starts[robot])
-        robots_goal.append(goals[robot])
-
-    return state, tuple(robots_start), tuple(robots_goal)
 
 mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/map1.txt'
 state, robots_start, robots_goal = load_map(mappath)
@@ -285,19 +223,3 @@ for step in path:
         state_show[robot_loc] = PATH_STATES[i]
     showgrid(state_show)
     input('Hit return to continue')
-
-# for i in range(max([len(path) for path in paths])):
-#     for j, path in enumerate(paths):
-#         if i >= len(path):
-#             continue
-
-#         state[path[i]] = PATH_STATES[j]
-
-#         if i > 0 and path[i - 1] != path[i] and state[path[i - 1]] == PATH_STATES[j]:
-#             if path[i - 1] in robots_goal:
-#                 state[path[i - 1]] = GOAL
-#             else:
-#                 state[path[i - 1]] = UNKNOWN
-
-#     showgrid(state)
-#     input('Hit return to continue')
