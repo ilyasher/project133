@@ -50,7 +50,9 @@ def showgrid(state):
         ax.axvline(n, lw=1, color='b', zorder=1)
 
     # Create the color range.  There are clearly more elegant ways...
-    color = np.ones((M,N,3))
+    color = np.ones((M,N,4))
+    is_path = state < 0
+    state = np.abs(state)
     for m in range(M):
         for n in range(N):
             state_to_color = {
@@ -71,7 +73,10 @@ def showgrid(state):
                 c = 'red'
             else:
                 c = state_to_color[state[m, n]]
-            color[m,n,0:3] = np.array(matplotlib.colors.to_rgb(c))
+            c = matplotlib.colors.to_rgba_array(c)[0]
+            if is_path[m, n]:
+                c[-1] = 0.5
+            color[m,n] = c
 
     # Draw the boxes
     ax.imshow(color, aspect='equal', interpolation='none',
@@ -285,16 +290,18 @@ for i in range(len(robots_start)):
 
 for i in range(max([len(path) for path in paths])):
     for j, path in enumerate(paths):
-        if i >= len(path):
-            continue
-
-        state[path[i]] = PATH_STATES[j]
-
-        if i > 0 and path[i - 1] != path[i] and state[path[i - 1]] == PATH_STATES[j]:
-            if path[i - 1] in robots_goal:
-                state[path[i - 1]] = GOAL
-            else:
-                state[path[i - 1]] = UNKNOWN
-
+        state[path[min(i, len(path)-1)]] = PATH_STATES[j]
     showgrid(state)
-    input('Hit return to continue')
+    plt.pause(0.1)
+    for j, path in enumerate(paths):
+        # state[PATH_STATES[0] <= state <= PATH_STATES[-1]] *= -1
+        state[np.isin(state, PATH_STATES)] *= -1
+        # state[PATH_STATES[0] <= state <= PATH_STATES[-1]] *= -1
+        # state[path[min(i, len(path)-1)]] = PATH_STATES[j]
+
+        # if i > 0 and path[i - 1] != path[i] and state[path[i - 1]] == PATH_STATES[j]:
+        #     if path[i - 1] in robots_goal:
+        #         state[path[i - 1]] = GOAL
+        #     else:
+        #         state[path[i - 1]] = UNKNOWN
+input("Hit return to exit")
