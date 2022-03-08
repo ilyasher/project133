@@ -168,6 +168,8 @@ def a_star(state, start, goal, forbidden, a_factor=1):
     # Set of visited coordinates in space
     visited = set()
 
+    unique_coords_in_q = set()
+
     # Number of squares we processed
     num_processed = 0
 
@@ -175,6 +177,8 @@ def a_star(state, start, goal, forbidden, a_factor=1):
     q = []
     heappush(q, (a_factor * manhattan_distance(start, goal),
                 SpaceTimeCoordinate(start[0], start[1], 0)))
+    print(start)
+    unique_coords_in_q.add(start)
 
     while True:
         # Ran out of squares to visit without finding the goal
@@ -184,6 +188,7 @@ def a_star(state, start, goal, forbidden, a_factor=1):
         dist, coord = heappop(q)
         dist -= a_factor * manhattan_distance(goal, coord.get_space())
         num_processed += 1
+        unique_coords_in_q.remove(coord.get_space())
 
         # We found the goal
         if coord.get_space() == goal:
@@ -221,6 +226,8 @@ def a_star(state, start, goal, forbidden, a_factor=1):
         # visited.add(coord.get_space())
         visited.add(coord)
         for nbor in get_neighbors(coord.get_space()):
+            if nbor in unique_coords_in_q:
+                continue
             new_coord = SpaceTimeCoordinate(nbor[0], nbor[1], coord.time + 1)
             if new_coord in visited:
                 continue
@@ -243,6 +250,7 @@ def a_star(state, start, goal, forbidden, a_factor=1):
             man_dist = manhattan_distance(goal, nbor)
             heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
             parents[new_coord] = coord
+            unique_coords_in_q.add(new_coord.get_space())
 
         # Add the option of remaining in the same location
         new_coord = SpaceTimeCoordinate(coord.x, coord.y, coord.time + 1)
@@ -250,6 +258,7 @@ def a_star(state, start, goal, forbidden, a_factor=1):
             man_dist = manhattan_distance(goal, new_coord.get_space())
             heappush(q, (1 + dist + new_coord.time + a_factor * man_dist, new_coord))
             parents[new_coord] = coord
+            unique_coords_in_q.add(new_coord.get_space())
 
     # Never reached
     raise RuntimeError("Error: should never be reached")
