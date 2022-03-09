@@ -125,16 +125,23 @@ def get_neighbors_multi(squares, state):
     for i, square in enumerate(squares):
         new = list()
 
-        # Add each square's neighbor only if it doesn't overlap with an
-        # existing square. (So they don't pass thru each other)
-        temp = squares[i]
-        squares[i] = ...
         for neighbor in get_neighbors(square, state=state):
-            if neighbor in squares :
-                continue
 
-            new += [r + [neighbor] for r in ret if neighbor not in r]
-        squares[i] = temp
+            # List of new states which this new neighbor could be a part of
+            valid_for_neighbor = ret
+
+            # Filter out states where the square for this new neighbor is already occupied
+            valid_for_neighbor = filter(lambda r: neighbor not in r, valid_for_neighbor)
+
+            # If someone was previously in the square of the new neighbor, make sure they
+            # moves to somewhere which is NOT our old square
+            # In other words, prevent two robots from "swapping" places
+            if neighbor in squares:
+                occupant = squares.index(neighbor)
+                if 0 <= occupant < i:
+                    valid_for_neighbor = filter(lambda r: r[occupant] != square, valid_for_neighbor)
+
+            new += [r + [neighbor] for r in valid_for_neighbor]
 
         ret = new
 
