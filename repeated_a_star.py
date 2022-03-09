@@ -4,12 +4,8 @@ from heapq import heappush, heappop
 from utils import *
 
 def repeated_a_star(state, starts, goals, a_factor=1):
-    for i in range(len(starts)):
-        state[starts[i]] = PATH_STATES[i]
-        state[goals[i]]  = GOAL
 
     forbidden = set()
-
     paths = []
 
     for i in range(len(starts)):

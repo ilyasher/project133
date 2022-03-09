@@ -6,11 +6,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import argparse
+import time
 
 from maze import make_maze_map, make_obstacle_map
 from utils import *
 
 from repeated_a_star import repeated_a_star
+from many_astar import joint_a_star
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Solve pathfinding with multiple robots')
@@ -22,17 +24,32 @@ if __name__ == '__main__':
                         help='number of robots for "maze" or "obstacle" map types')
     parser.add_argument('--sparsity', dest='sparsity', default=0.7, type=float,
                         help='how many obstacles are in the map, for the "obstacle" map type')
+    parser.add_argument('--algo', dest='algo', default='repeated', choices=['repeated', 'joint'],
+                        help='which algorithm to use - either "repeated" or "joint"')
     args = parser.parse_args()
 
     if args.map == 'obstacle':
-        state, robots_start, robots_goal = make_obstacle_map(args.mapsize, args.nrobots, density=args.sparsity)
+        state, robots_start, robots_goal = make_obstacle_map(args.mapsize, args.nrobots, sparsity=args.sparsity)
     elif args.map == 'maze':
         state, robots_start, robots_goal = make_maze_map(args.mapsize, args.nrobots)
     else:
         state, robots_start, robots_goal = load_map(args.map)
 
-    paths = repeated_a_star(state, robots_start, robots_goal, a_factor=1)
+    start_time = time.time()
+    if args.algo == 'repeated':
+        paths = repeated_a_star(state, robots_start, robots_goal)
+    elif args.algo == 'joint':
+        paths = joint_a_star(state, robots_start, robots_goal)
+    else:
+        raise ValueError(f"Unknown algorithm type {args.algo}!")
+    end_time = time.time()
+    if paths is None:
+        raise RuntimeError("Map has no solution!")
+    print(f"Found solution in {end_time - start_time} seconds")
 
+    for i in range(len(robots_start)):
+        state[robots_start[i]] = PATH_STATES[i]
+        state[robots_goal[i]]  = GOAL
     showgrid(state)
     input("Solution found. Hit return to continue.")
     for i in range(max([len(path) for path in paths])):

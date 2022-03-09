@@ -28,11 +28,11 @@ def make_maze_map(N, num_robots):
     robots_start, robots_end = generate_robot_locs(array, num_robots)
     return array, robots_start, robots_end
 
-def make_obstacle_map(N, num_robots, density=0.7):
+def make_obstacle_map(N, num_robots, sparsity=0.7):
     array = np.zeros(shape=(N, N))
     array[1:-1, 1:-1] = 1
 
-    while np.sum(array) > N*N*density:
+    while np.sum(array) > N*N*sparsity:
         i, j = tuple(np.random.randint(low=1, high=N-1, size=2))
         array[i-1:i+1, j-1:j+1] = 0
 
