@@ -15,13 +15,16 @@ from functools import lru_cache
 from sklearn import neighbors
 
 from utils import *
+from maze import make_maze_map, make_obstacle_map
 
-mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
-state, robots_start, robots_goal = load_map(mappath)
+# mappath = sys.argv[1] if len(sys.argv) > 1 else 'maps/hw1_many_robots.txt'
+# state, robots_start, robots_goal = load_map(mappath)
+
+state, robots_start, robots_goal = make_obstacle_map(20, 7, density=0.5)
 
 def distance_array(walls, start):
     sol = walls.copy().astype(float)
-    sol[:] = -1
+    sol[:] = np.inf
     q = Queue()
     q.put((0, start))
     visited = set()
@@ -40,7 +43,7 @@ def distance_array(walls, start):
         for (di, dj) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             if (i+di, j+dj) not in visited:
                 q.put((dist+1, (i+di, j+dj)))
-    print(sol)
+    # print(sol)
     return sol
 
 def distance_multi(goals, dests, distances):
@@ -49,7 +52,7 @@ def distance_multi(goals, dests, distances):
         s += distances[goals[i]][dests[i]]
     return s
 
-def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
+def a_star_multi(state, starts, goals, a_factor=1, visualize=False, max_steps=np.inf):
 
     # Trace the path to the start square from any visited square
     parents = dict()
@@ -65,6 +68,12 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
     walls = (state == WALL)
     distances = {goal : distance_array(walls, goal) for goal in goals}
     print("Constructed distance arrays")
+
+    # Check whether solution is possible
+    print(distance_multi(goals, starts, distances))
+    if distance_multi(goals, starts, distances) == np.inf:
+        print("Impossible map!")
+        return None, 0
 
     # Priority queue used to process squares
     q = []
@@ -117,7 +126,7 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
             print(f"Path length: {path_length}")
             print(f"Number of states processed: {num_processed}")
 
-            return path
+            return path, num_processed
 
         # Add all unseen neighbors to the processing queue
         if visualize:
@@ -140,6 +149,9 @@ def a_star_multi(state, starts, goals, a_factor=1, visualize=False):
         if num_processed % 500 == 0:
             print(f"Processed {num_processed} states")
 
+        if num_processed >= max_steps:
+            return None, num_processed
+
     # Never reached
     raise RuntimeError("Error: should never be reached")
 
@@ -147,13 +159,12 @@ for i in range(len(robots_start)):
     state[robots_start[i]] = PATH_STATES[i]
     state[robots_goal[i]]  = GOAL
 
-
+showgrid(state)
 start_time = time.time()
-path = a_star_multi(state, robots_start, robots_goal, a_factor=2, visualize=False)
+path, n_steps = a_star_multi(state, robots_start, robots_goal, a_factor=10, visualize=False)
 end_time = time.time()
 print(f"Found solution in {end_time - start_time} seconds")
-print(f"Solution is {len(path)} steps long.")
-showgrid(state)
+# print(f"Solution is {len(path)} steps long.")
 input("Hit return to continue.")
 
 total_time = 5 # seconds

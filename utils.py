@@ -10,7 +10,8 @@ ONPATH    = 4
 START     = 5
 GOAL      = 6
 
-PATH_STATES = [7, 8, 9, 10, 11]
+PATH_STATES = list(range(GOAL+1, 100))
+COLOR_NAMES = list(matplotlib.colors.cnames.keys())
 
 def load_map(filepath):
     with open(filepath) as f:
@@ -85,7 +86,7 @@ def showgrid(state):
                 PATH_STATES[4]: 'maroon'
             }
             if state[m, n] not in state_to_color:
-                c = 'red'
+                c = COLOR_NAMES[int(state[m, n])]
             else:
                 c = state_to_color[state[m, n]]
             c = matplotlib.colors.to_rgba_array(c).flatten()
