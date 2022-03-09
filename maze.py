@@ -32,7 +32,7 @@ def make_obstacle_map(N, num_robots, sparsity=0.7):
     array = np.zeros(shape=(N, N))
     array[1:-1, 1:-1] = 1
 
-    while np.mean(array) > sparsity:
+    while np.mean(array[1:-1, 1:-1]) > sparsity:
         i, j = tuple(np.random.randint(low=1, high=N-1, size=2))
         if np.random.rand() < 0.5:
             array[i-1:i+1, j-1:j+1] = 0
